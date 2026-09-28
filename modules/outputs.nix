@@ -6,7 +6,11 @@
 }@args:
 let
   has-flake-parts = args ? flake-parts-lib;
-  flakeModule = den.lib.aspects.resolve "flake" (den.lib.resolveEntity "flake" { });
+  # One shared resolve (den.lib.fleetResult): this wiring needs its imports,
+  # den.lib.pipes reads its assembled quirk pools — same pipeline run.
+  flakeModule = {
+    inherit (den.lib.fleetResult) imports;
+  };
   flake =
     (lib.evalModules {
       modules = [

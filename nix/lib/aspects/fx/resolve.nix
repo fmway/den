@@ -1083,6 +1083,14 @@ let
       # set from scope-string to entity identity (id_hash) for projected
       # hasAspect (see entities/_types.nix:pathSetByScopeOption).
       inherit scopeContexts scopeEntityKind;
+      # Assembled per-scope contexts: scope ctx merged with each quirk's pipe
+      # data (post spawn-fold, drain and assembly). Surface for reading quirk
+      # pools without a class module — den.lib.pipes. The raw `scopeContexts`
+      # above stays untouched: it carries no quirk keys.
+      pipeContexts = augmentedScopeContexts;
+      # Root of the scope tree this run resolved from, so a reader addresses
+      # the root pool without hardcoding mkScopeId's output.
+      rootScopeId = result.state.rootScopeId;
       # The production edge object (see productionEdgeTrace above).
       edgeTrace = productionEdgeTrace;
     };

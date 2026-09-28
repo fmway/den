@@ -104,6 +104,24 @@ it. See [Scoping](/guides/quirks/#scoping-who-sees-what).
 If no producers emitted data, it's `[]`. Delivery uses the same
 `wrapClassModule` mechanism as entity context args.
 
+## Reading quirk data outside a class module
+
+Class modules are not the only consumer. Flake outputs, tooling, and reports
+can read the same assembled pools through
+[`den.lib.pipes`](/reference/lib/#denlibpipes):
+
+```nix
+# No class involved — reads the pool at the flake root scope.
+flake.custom-inputs = den.lib.pipes.collect "inputs";
+```
+
+Emission stays scope-local, so a fleet-wide read needs the data to reach the
+flake root scope first — route it with `pipe.expose` or a `pipe.collectAll`
+policy, exactly as you would for a class-module consumer. An unknown quirk name
+throws instead of reading as empty, and `[ { pkgs, ... }: … ]` config thunks
+throw too: those only resolve inside `evalModules`, so consume them from a
+class module.
+
 ---
 
 ## Pipe builder API

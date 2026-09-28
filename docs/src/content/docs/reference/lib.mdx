@@ -142,6 +142,55 @@ targets and routing type.
 See [den.policies reference](/reference/policies/#denlibpolicyinspectinspect)
 for full documentation.
 
+## `den.lib.fleetResult`
+
+The shared full resolve of the flake entity: one pipeline run behind both the
+flake output wiring ([`modules/outputs.nix`](https://github.com/denful/den/blob/main/modules/outputs.nix))
+and `den.lib.pipes`. Read `.imports` for the flake module list, `.pipeContexts`
+for assembled quirk data, `.rootScopeId` for the root scope. Only forced when
+you touch it.
+
+## `den.lib.pipes`
+
+<Aside title="Source" icon="github">
+[`nix/lib/pipes.nix`](https://github.com/denful/den/blob/main/nix/lib/pipes.nix)
+</Aside>
+
+Class-independent access to assembled [quirk](/reference/quirks/) data. Every
+function reads the single shared fleet resolve (`den.lib.fleetResult`) — the
+same pipeline run that feeds the flake outputs — so reading a quirk never
+re-resolves the fleet and never needs a throwaway class.
+
+### `den.lib.pipes.collect quirk`
+
+The assembled pool (a list) of `quirk` at the flake root scope. Emits from
+deeper scopes reach it through `pipe.expose` / `pipe.collectAll`; anything not
+routed there is invisible to this call.
+
+```nix
+flake.custom-inputs = den.lib.pipes.collect "inputs";
+```
+
+### `den.lib.pipes.collectWith { quirk, scope? }`
+
+The same pool at an explicit scope. `scope` defaults to
+`den.lib.pipes.rootScopeId` (the flake root).
+
+- unknown `quirk` (not in `den.quirks`) throws, listing the declared quirks
+- unknown `scope` (not present in the resolve) throws, listing known scopes
+
+### `den.lib.pipes.contexts`, `.scopes`, `.rootScopeId`
+
+The raw per-scope contexts (scope context merged with quirk pools), their scope
+ids, and the flake root scope id — for callers that address scopes themselves.
+Contexts may carry pipeline markers beside the quirk keys, so prefer
+`collect`/`collectWith`.
+
+Values produced as `{ pkgs, ... }:` config thunks are rejected by
+`collect`/`collectWith`: they only resolve inside `evalModules`, so consume
+those quirks from a class module. See
+[Reading quirk data outside a class module](/reference/quirks/#reading-quirk-data-outside-a-class-module).
+
 ## `den.lib.nh`
 
 <Aside title="Source" icon="github">

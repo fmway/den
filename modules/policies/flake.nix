@@ -1,50 +1,7 @@
 # Flake output policies — activated via schema includes.
-{
-  den,
-  lib,
-  inputs,
-  options,
-  ...
-}:
-let
+{ den, lib, ... }: let
   inherit (den.lib.policy) resolve;
-
-  systemOutputs = [
-    "packages"
-    "apps"
-    "checks"
-    "devShells"
-    "legacyPackages"
-  ];
-
-  has-flake-output =
-    output: ((options.flake.type.getSubOptions or (_: options.flake)) { }) ? ${output};
-
-  mkOutputPolicy =
-    output:
-    { system, ... }:
-    lib.optional (has-flake-output output) (
-      den.lib.policy.route {
-        fromClass = output;
-        intoClass = "flake";
-        path = [
-          "flake"
-          output
-          system
-        ];
-        adaptArgs = _: { pkgs = inputs.nixpkgs.legacyPackages.${system}; };
-      }
-    );
-in
-{
-  # Register system output names as classes so aspect keys dispatch correctly.
-  den.classes = lib.listToAttrs (
-    map (output: {
-      name = output;
-      value.description = "Flake ${output} output class";
-    }) systemOutputs
-  );
-
+in {
   # flake → flake-system: fan out per system
   den.policies.flake-to-systems =
     _: map (system: resolve.to "flake-system" { inherit system; }) den.systems;
@@ -77,17 +34,9 @@ in
       ]
     ) (builtins.attrValues homes);
 
-  # Per-output route policies: class → flake
-  den.policies.packages-to-flake = mkOutputPolicy "packages";
-  den.policies.apps-to-flake = mkOutputPolicy "apps";
-  den.policies.checks-to-flake = mkOutputPolicy "checks";
-  den.policies.devShells-to-flake = mkOutputPolicy "devShells";
-  den.policies.legacyPackages-to-flake = mkOutputPolicy "legacyPackages";
-
   den.schema.flake.includes = [ den.policies.flake-to-systems ];
   den.schema.flake-system.includes = [
     den.policies.system-to-os-outputs
     den.policies.system-to-hm-outputs
-  ]
-  ++ map (output: den.policies."${output}-to-flake") systemOutputs;
+  ];
 }
